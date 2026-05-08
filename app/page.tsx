@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { Button } from "@/components/ui/button";   // keyinroq shadcn qo'shasiz
 import { Shield, Bell, Users, ArrowRight } from "lucide-react";
 
 export default function Home() {
@@ -26,13 +25,17 @@ export default function Home() {
         </div>
 
         <div className="flex justify-center gap-6">
-          <Link href="/dashboard">
-            <Button size="lg" className="text-lg px-10 h-14">Dashboard</Button>
+          <Link 
+            href="/dashboard"
+            className="bg-blue-600 hover:bg-blue-700 px-10 py-4 rounded-xl text-lg font-medium transition"
+          >
+            Dashboardga kirish
           </Link>
-          <Link href="/add-document">
-            <Button size="lg" variant="outline" className="text-lg px-10 h-14 border-white text-white hover:bg-white hover:text-black">
-              Hujjat qo‘shish <ArrowRight className="ml-2" />
-            </Button>
+          <Link 
+            href="/add-document"
+            className="border border-white/70 hover:bg-white/10 px-10 py-4 rounded-xl text-lg font-medium transition flex items-center gap-2"
+          >
+            Hujjat qo‘shish <ArrowRight />
           </Link>
         </div>
       </div>
