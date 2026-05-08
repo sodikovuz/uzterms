@@ -1,49 +1,59 @@
 const express = require("express");
+
 const bcrypt = require("bcryptjs");
+
 const jwt = require("jsonwebtoken");
 
-const supabase = require("../lib/supabase");
+const db = require("../lib/db");
 
 const router = express.Router();
 
-router.post("/register", async (req, res) => {
-  try {
-    const { email, password } = req.body;
+router.post(
+  "/register",
+  async (req, res) => {
+    try {
+      const { email, password } =
+        req.body;
 
-    const hashed = await bcrypt.hash(password, 10);
+      const hashed =
+        await bcrypt.hash(password, 10);
 
-    const { data, error } = await supabase
-      .from("users")
-      .insert([
-        {
+      const result = await db.query(
+        `
+        INSERT INTO users (
           email,
-          password: hashed,
-        },
-      ])
-      .select()
-      .single();
+          password
+        )
+        VALUES ($1, $2)
+        RETURNING *
+      `,
+        [email, hashed]
+      );
 
-    if (error) {
-      return res.status(400).json(error);
+      res.json(result.rows[0]);
+    } catch (err) {
+      res.status(500).json({
+        message: err.message,
+      });
     }
-
-    res.json(data);
-  } catch (err) {
-    res.status(500).json({
-      message: err.message,
-    });
   }
-});
+);
 
 router.post("/login", async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password } =
+      req.body;
 
-    const { data: user } = await supabase
-      .from("users")
-      .select("*")
-      .eq("email", email)
-      .single();
+    const result = await db.query(
+      `
+      SELECT *
+      FROM users
+      WHERE email = $1
+    `,
+      [email]
+    );
+
+    const user = result.rows[0];
 
     if (!user) {
       return res.status(404).json({
@@ -51,7 +61,11 @@ router.post("/login", async (req, res) => {
       });
     }
 
-    const valid = await bcrypt.compare(password, user.password);
+    const valid =
+      await bcrypt.compare(
+        password,
+        user.password
+      );
 
     if (!valid) {
       return res.status(400).json({
@@ -60,12 +74,18 @@ router.post("/login", async (req, res) => {
     }
 
     const token = jwt.sign(
-      { id: user.id },
+      {
+        id: user.id,
+      },
       process.env.JWT_SECRET,
-      { expiresIn: "30d" }
+      {
+        expiresIn: "30d",
+      }
     );
 
-    res.json({ token });
+    res.json({
+      token,
+    });
   } catch (err) {
     res.status(500).json({
       message: err.message,
