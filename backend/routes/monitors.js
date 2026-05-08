@@ -1,52 +1,79 @@
 const express = require("express");
 
-const supabase = require("../lib/supabase");
+const db = require("../lib/db");
+
 const auth = require("../middleware/auth");
 
 const router = express.Router();
 
 router.get("/", auth, async (req, res) => {
-  const { data, error } = await supabase
-    .from("monitors")
-    .select("*")
-    .order("created_at", {
-      ascending: false,
+  try {
+    const result = await db.query(`
+      SELECT *
+      FROM monitors
+      ORDER BY created_at DESC
+    `);
+
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({
+      message: err.message,
     });
-
-  if (error) {
-    return res.status(400).json(error);
   }
-
-  res.json(data);
 });
 
 router.post("/", auth, async (req, res) => {
-  const { url, title } = req.body;
+  try {
+    const { title, url } =
+      req.body;
 
-  const { data, error } = await supabase
-    .from("monitors")
-    .insert([{ url, title }])
-    .select()
-    .single();
+    const result = await db.query(
+      `
+      INSERT INTO monitors (
+        title,
+        url,
+        user_id
+      )
+      VALUES ($1, $2, $3)
+      RETURNING *
+    `,
+      [
+        title,
+        url,
+        req.user.id,
+      ]
+    );
 
-  if (error) {
-    return res.status(400).json(error);
+    res.json(result.rows[0]);
+  } catch (err) {
+    res.status(500).json({
+      message: err.message,
+    });
   }
-
-  res.json(data);
 });
 
-router.delete("/:id", auth, async (req, res) => {
-  const { error } = await supabase
-    .from("monitors")
-    .delete()
-    .eq("id", req.params.id);
+router.delete(
+  "/:id",
+  auth,
+  async (req, res) => {
+    try {
+      await db.query(
+        `
+        DELETE FROM monitors
+        WHERE id = $1
+      `,
+        [req.params.id]
+      );
 
-  if (error) {
-    return res.status(400).json(error);
+      res.json({
+        success: true,
+      });
+    } catch (err) {
+      res.status(500).json({
+        message: err.message,
+      });
+    }
   }
-
-  res.json({ success: true });
-});
+);
 
 module.exports = router;
